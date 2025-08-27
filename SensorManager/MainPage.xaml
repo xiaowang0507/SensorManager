@@ -1,0 +1,167 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SensorManager.MainPage">
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*" />
+            <!-- 水平仪区域 -->
+            <ColumnDefinition Width="1*" />
+            <!-- 控制面板区域 -->
+        </Grid.ColumnDefinitions>
+
+        <!-- 左边：水平仪区域 -->
+        <AbsoluteLayout Grid.Column="0"
+                      HorizontalOptions="Center" 
+                      VerticalOptions="Center"
+                      WidthRequest="400"
+                      HeightRequest="400">
+
+            <!-- 外圈 -->
+            <Frame AbsoluteLayout.LayoutBounds="0.5,0.5,300,300"
+                 AbsoluteLayout.LayoutFlags="PositionProportional"
+                 CornerRadius="150"
+                 BackgroundColor="Transparent"
+                 BorderColor="#777777"
+                 Padding="0"
+                 HasShadow="False">
+
+                <!-- 小球 -->
+                <Ellipse x:Name="Bubble"
+                       WidthRequest="40"
+                       HeightRequest="40"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center">
+                    <Ellipse.Fill>
+                        <RadialGradientBrush x:Name="BubbleGradient">
+                            <GradientStop Color="#FF4444" Offset="0.0"/>
+                            <GradientStop Color="#FF0000" Offset="1.0"/>
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+            </Frame>
+
+            <!-- 中心标记 -->
+            <BoxView AbsoluteLayout.LayoutBounds="0.5,0.5,2,2"
+                   AbsoluteLayout.LayoutFlags="PositionProportional"
+                   Color="Black"/>
+
+            <!-- 参考线 -->
+            <BoxView AbsoluteLayout.LayoutBounds="0.5,0.5,300,1"
+                   AbsoluteLayout.LayoutFlags="PositionProportional"
+                   Color="Gray"
+                   Opacity="0.3"/>
+            <BoxView AbsoluteLayout.LayoutBounds="0.5,0.5,1,300"
+                   AbsoluteLayout.LayoutFlags="PositionProportional"
+                   Color="Gray"
+                   Opacity="0.3"/>
+        </AbsoluteLayout>
+
+        <!-- 右边：控制面板区域 -->
+        <Grid Grid.Column="1"
+              VerticalOptions="Center"
+              HorizontalOptions="Center"
+              Padding="20"
+              RowSpacing="20"
+              ColumnSpacing="20">
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 倒计时/稳定时间显示 -->
+            <Frame Grid.Row="0" Grid.Column="0"
+                 BackgroundColor="#F8F9FA"
+                 CornerRadius="10"
+                 Padding="15"
+                 HasShadow="True"
+                 IsVisible="{Binding IsTimerVisible}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="{Binding TimerTitle}"
+                         FontSize="15"
+                         FontAttributes="Bold"
+                         TextColor="#333333"
+                         HorizontalOptions="Center"
+                           VerticalOptions="Center"/>
+
+                    <BoxView HeightRequest="1" Color="#DDDDDD"/>
+
+                    <Label Text="{Binding TimerValue}"
+                         FontSize="15"
+                         FontAttributes="Bold"
+                         TextColor="{Binding TimerTextColor}"
+                         HorizontalOptions="Center"
+                         HorizontalTextAlignment="Center"
+                           VerticalOptions="Center"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- 数据显示 -->
+            <Frame Grid.Row="0" Grid.Column="1"
+                 BackgroundColor="#F8F9FA"
+                 CornerRadius="10"
+                 Padding="15"
+                 HasShadow="True">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="当前数据"
+                         FontSize="16"
+                         FontAttributes="Bold"
+                         TextColor="#333333"
+                         HorizontalOptions="Center"/>
+
+                    <BoxView HeightRequest="1" Color="#DDDDDD"/>
+
+                    <Label Text="{Binding StatusMessage}"
+       FontSize="14"
+       TextColor="#555555"
+       HorizontalOptions="Center"
+       LineBreakMode="WordWrap"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- 开始/暂停和结束按钮 -->
+            <HorizontalStackLayout Grid.Row="1" Grid.ColumnSpan="2"
+                                 Spacing="15"
+                                 HorizontalOptions="Center">
+                <Button x:Name="StartPauseButton"
+                      Text="开始监测"
+                      BackgroundColor="#007BFF"
+                      TextColor="White"
+                      CornerRadius="20"
+                      WidthRequest="120"
+                      HeightRequest="40"
+                      Clicked="OnStartPauseClicked"/>
+
+                <Button x:Name="StopButton"
+                      Text="结束"
+                      BackgroundColor="#DC3545"
+                      TextColor="White"
+                      CornerRadius="20"
+                      WidthRequest="120"
+                      HeightRequest="40"
+                      Clicked="OnStopClicked"/>
+            </HorizontalStackLayout>
+
+            <!-- 设置按钮 -->
+            <Button Grid.Row="2" Grid.ColumnSpan="2"
+                  x:Name="SettingsButton"
+                  Text="设置"
+                  BackgroundColor="#6C757D"
+                  TextColor="White"
+                  CornerRadius="20"
+                  HeightRequest="40"
+                  WidthRequest="255"
+                  HorizontalOptions="Center"
+                  Clicked="OnSettingsClicked"/>
+        </Grid>
+    </Grid>
+
+</ContentPage>

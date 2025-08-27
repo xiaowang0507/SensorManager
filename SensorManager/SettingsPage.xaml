@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="SensorManager.SettingsPage"
+             Title="设置"
+             BackgroundColor="#F5F5F5">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="20">
+
+            <!-- 稳定时间设置 -->
+            <Frame BackgroundColor="White" CornerRadius="10" HasShadow="True" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="稳定时间设置" FontSize="16" FontAttributes="Bold" TextColor="#333333"/>
+                    <BoxView HeightRequest="1" Color="#EEEEEE"/>
+
+                    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" RowSpacing="10" ColumnSpacing="10">
+                        <Label Text="小时:" Grid.Row="0" Grid.Column="0" VerticalOptions="Center"/>
+                        <Picker x:Name="HoursPicker" Grid.Row="0" Grid.Column="1" 
+                              Title="选择小时" ItemsSource="{Binding HoursList}" SelectedIndex="0"/>
+
+                        <Label Text="分钟:" Grid.Row="1" Grid.Column="0" VerticalOptions="Center"/>
+                        <Picker x:Name="MinutesPicker" Grid.Row="1" Grid.Column="1" 
+                              Title="选择分钟" ItemsSource="{Binding MinutesList}" SelectedIndex="0"/>
+                    </Grid>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- 开始延时设置 -->
+            <Frame BackgroundColor="White" CornerRadius="10" HasShadow="True" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="开始延时时间" FontSize="16" FontAttributes="Bold" TextColor="#333333"/>
+                    <BoxView HeightRequest="1" Color="#EEEEEE"/>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Label Text="延时(秒):" VerticalOptions="Center" HorizontalOptions="Start"/>
+                        <Entry x:Name="DelayEntry" Keyboard="Numeric" Text="0" 
+                 Placeholder="输入秒数" HorizontalOptions="End"
+                 Completed="OnDelayEntryCompleted"/>
+                    </Grid>
+
+                    <Label Text="提示: 输入0表示无延时" FontSize="12" TextColor="#666666" 
+             HorizontalOptions="Center" Margin="0,5,0,0"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- 倾斜判定阈值 -->
+            <Frame BackgroundColor="White" CornerRadius="10" HasShadow="True" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="水平倾斜判定阈值" FontSize="16" FontAttributes="Bold" TextColor="#333333"/>
+                    <BoxView HeightRequest="1" Color="#EEEEEE"/>
+
+                    <VerticalStackLayout x:Name="ThresholdRadioLayout" Spacing="8">
+                        <RadioButton Content="高精度 (±1°)" Value="1" CheckedChanged="OnThresholdRadioChanged"/>
+                        <RadioButton Content="标准 (±3°)" Value="3" IsChecked="True" CheckedChanged="OnThresholdRadioChanged"/>
+                        <RadioButton Content="宽松 (±5°)" Value="5" CheckedChanged="OnThresholdRadioChanged"/>
+                        <RadioButton Content="自定义" Value="0" CheckedChanged="OnThresholdRadioChanged"/>
+                    </VerticalStackLayout>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" IsVisible="{Binding IsCustomThresholdVisible}">
+                        <Label Text="自定义值:" VerticalOptions="Center" HorizontalOptions="Start"/>
+                        <Entry x:Name="CustomThresholdEntry" Keyboard="Numeric" Text="3" 
+         Placeholder="0.1-10.0" HorizontalOptions="End" Completed="OnCustomThresholdCompleted"/>
+                    </Grid>
+                    <Label Text="取值范围: 0.1 - 10.0" FontSize="12" TextColor="#666666" 
+                         IsVisible="{Binding IsCustomThresholdVisible}"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- 提示设置 -->
+            <Frame BackgroundColor="White" CornerRadius="10" HasShadow="True" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="提示设置" FontSize="16" FontAttributes="Bold" TextColor="#333333"/>
+                    <BoxView HeightRequest="1" Color="#EEEEEE"/>
+
+                    <VerticalStackLayout Spacing="15">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="震动提示" VerticalOptions="Center"/>
+                            <Switch x:Name="VibrationSwitch" IsToggled="True" 
+                                  HorizontalOptions="End" Toggled="OnVibrationToggled"/>
+                        </Grid>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- 震动反馈设置 -->
+            <Frame BackgroundColor="White" CornerRadius="10" HasShadow="True" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="震动反馈设置" FontSize="16" FontAttributes="Bold" TextColor="#333333"/>
+                    <BoxView HeightRequest="1" Color="#EEEEEE"/>
+
+                    <VerticalStackLayout Spacing="15">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="启用雷达式震动反馈" VerticalOptions="Center"/>
+                            <Switch x:Name="RadarVibrationSwitch" IsToggled="False" 
+                                  HorizontalOptions="End" Toggled="OnRadarVibrationToggled"/>
+                        </Grid>
+
+                        <!-- 震动强度设置 -->
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10" 
+                              IsVisible="{Binding Source={x:Reference RadarVibrationSwitch}, Path=IsToggled}">
+                            <Label Text="最大震动强度:" VerticalOptions="Center"/>
+                            <Slider x:Name="VibrationIntensitySlider" 
+      Minimum="100" Maximum="1000" Value="500"
+      ValueChanged="OnVibrationIntensityChanged"/>
+                        </Grid>
+
+                        <Label Text="提示: 倾斜越大震动越频繁，类似倒车雷达" 
+                             FontSize="12" TextColor="#666666"
+                             IsVisible="{Binding Source={x:Reference RadarVibrationSwitch}, Path=IsToggled}"/>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- 记录管理 -->
+            <Frame BackgroundColor="White" CornerRadius="10" HasShadow="True" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="记录管理" FontSize="16" FontAttributes="Bold" TextColor="#333333"/>
+                    <BoxView HeightRequest="1" Color="#EEEEEE"/>
+
+                    <Button Text="📊 查看本次记录" BackgroundColor="#17A2B8" TextColor="White" 
+              CornerRadius="20" HeightRequest="40" Clicked="OnViewRecordsClicked"
+              HorizontalOptions="Fill"/>
+
+                    <Button Text="🗑️ 清空所有记录" BackgroundColor="#DC3545" TextColor="White" 
+              CornerRadius="20" HeightRequest="40" Clicked="OnClearRecordsClicked"
+              HorizontalOptions="Fill" Margin="0,10,0,0"/>
+
+                    <Label Text="{Binding RecordsCountText}" FontSize="12" TextColor="#666666" 
+             HorizontalOptions="Center" Margin="0,10,0,0"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- 保存按钮 -->
+            <HorizontalStackLayout Spacing="15" HorizontalOptions="Center">
+                <Button Text="↩️ 返回" BackgroundColor="#6C757D" TextColor="White" 
+          CornerRadius="20" HeightRequest="45" WidthRequest="120"
+          Clicked="OnBackButtonClicked"/>
+
+                <Button Text="💾 保存设置" BackgroundColor="#28A745" TextColor="White" 
+          CornerRadius="20" HeightRequest="45" WidthRequest="120"
+          Clicked="OnSaveSettingsButtonClicked"/>
+            </HorizontalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
