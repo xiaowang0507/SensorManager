@@ -111,6 +111,27 @@
                 </VerticalStackLayout>
             </Frame>
 
+            <!-- 校准模式设置 -->
+            <Frame BackgroundColor="White" CornerRadius="10" HasShadow="True" Padding="15">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="校准模式设置" FontSize="16" FontAttributes="Bold" TextColor="#333333"/>
+                    <BoxView HeightRequest="1" Color="#EEEEEE"/>
+
+                    <VerticalStackLayout Spacing="15">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Text="以开始时刻姿态为基准" 
+                       VerticalOptions="Center"
+                       LineBreakMode="WordWrap"/>
+                            <Switch x:Name="RelativeBaselineSwitch" IsToggled="False" 
+                      HorizontalOptions="End" Toggled="OnRelativeBaselineToggled"/>
+                        </Grid>
+
+                        <Label Text="提示: 开启后，将以开始监测时的手机姿态为水平基准，而不是绝对水平"
+                   FontSize="12" TextColor="#666666"/>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
             <!-- 记录管理 -->
             <Frame BackgroundColor="White" CornerRadius="10" HasShadow="True" Padding="15">
                 <VerticalStackLayout Spacing="10">

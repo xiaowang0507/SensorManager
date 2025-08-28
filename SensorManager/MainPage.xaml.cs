@@ -41,6 +41,10 @@ namespace SensorManager
         private System.Timers.Timer _vibrationTimer;
         private double _currentTiltAmount;
         private DateTime _lastVibrationTime;
+        private double _baselineXAngle;
+        private double _baselineYAngle;
+        private bool _isRelativeBaseline;
+
 
         public string TiltStatus
         {
@@ -63,6 +67,7 @@ namespace SensorManager
             public double XAngle { get; set; }
             public double YAngle { get; set; }
             public string EventType { get; set; }
+            public bool IsRelative { get; set; }
         }
 
         public string DisplayXAngle
@@ -197,6 +202,7 @@ namespace SensorManager
             _vibrationEnabled = Preferences.Get("VibrationEnabled", true);
             _radarVibrationEnabled = Preferences.Get("RadarVibrationEnabled", false);
             _vibrationIntensity = Preferences.Get("VibrationIntensity", 500);
+            _isRelativeBaseline = Preferences.Get("IsRelativeBaseline", false);
 
             UpdateStableTimeDisplay();
         }
@@ -221,7 +227,7 @@ namespace SensorManager
                     UpdateStatusMessage();
                     UpdateBubblePosition();
                     UpdateTiltStatus();
-                    UpdateBubbleColor();
+                    UpdateBubbleColor(); // 调用无参数版本
                     CheckTiltStatus();
                 }
             }
@@ -241,7 +247,7 @@ namespace SensorManager
                     UpdateStatusMessage();
                     UpdateBubblePosition();
                     UpdateTiltStatus();
-                    UpdateBubbleColor();
+                    UpdateBubbleColor(); // 调用无参数版本
                     CheckTiltStatus();
                 }
             }
@@ -383,6 +389,20 @@ namespace SensorManager
             _monitoringStartTime = DateTime.Now;
             _recordingStartTime = DateTime.Now;
 
+            // 捕获当前角度作为基准（如果启用相对基准模式）
+            if (_isRelativeBaseline)
+            {
+                _baselineXAngle = XAngle;
+                _baselineYAngle = YAngle;
+                System.Diagnostics.Debug.WriteLine($"设置相对基准: X={_baselineXAngle:F1}°, Y={_baselineYAngle:F1}°");
+            }
+            else
+            {
+                _baselineXAngle = 0;
+                _baselineYAngle = 0;
+                System.Diagnostics.Debug.WriteLine("使用绝对水平基准");
+            }
+
             if (_delaySeconds > 0)
             {
                 TimerTitle = "倒计时";
@@ -395,6 +415,15 @@ namespace SensorManager
 
             StatusMessage = $"记录中...\n纵向角度: {DisplayXAngle}\n横向角度: {DisplayYAngle}";
         }
+
+        private (double relativeX, double relativeY) CalculateRelativeAngles(double currentX, double currentY)
+        {
+            if (!_isRelativeBaseline)
+                return (currentX, currentY);
+
+            return (currentX - _baselineXAngle, currentY - _baselineYAngle);
+        }
+
 
         private void StopRecording()
         {
@@ -562,45 +591,58 @@ namespace SensorManager
         private void UpdateStatusMessage()
         {
             string statusPrefix = _isMonitoring ? "记录中" : "监测中（未记录）";
-            StatusMessage = $"{statusPrefix}\n纵向角度: {DisplayXAngle}\n横向角度: {DisplayYAngle}";
+            var (relativeX, relativeY) = CalculateRelativeAngles(XAngle, YAngle);
+
+            string angleInfo = _isRelativeBaseline ?
+                $"相对角度: X={relativeX:F1}°, Y={relativeY:F1}°" :
+                $"绝对角度: X={DisplayXAngle}, Y={DisplayYAngle}";
+
+            StatusMessage = $"{statusPrefix}\n{angleInfo}\n状态: {TiltStatus}";
         }
 
         private void CheckTiltStatus()
         {
             if (!_isStablePeriod) return;
 
-            bool isCurrentlyTilted = Math.Abs(XAngle) >= _threshold || Math.Abs(YAngle) >= _threshold;
-            _currentTiltAmount = CalculateTiltAmount();
+            // 计算相对于基准的角度
+            var (relativeX, relativeY) = CalculateRelativeAngles(XAngle, YAngle);
 
-            // 先更新颜色
-            UpdateBubbleColor();
+            bool isCurrentlyTilted = Math.Abs(relativeX) >= _threshold || Math.Abs(relativeY) >= _threshold;
+            _currentTiltAmount = CalculateTiltAmount(relativeX, relativeY);
 
-            if (isCurrentlyTilted && !_isTilted) // 从水平变为倾斜
+            // 更新颜色 - 使用相对角度
+            UpdateBubbleColor(relativeX, relativeY);
+
+            if (isCurrentlyTilted && !_isTilted)
             {
-                OnTiltStarted();
-                StartRadarVibration(); // 开始震动
-                System.Diagnostics.Debug.WriteLine($"倾斜开始: X={XAngle:F1}°, Y={YAngle:F1}°, 综合倾斜={_currentTiltAmount:F1}°");
+                OnTiltStarted(relativeX, relativeY);
+                StartRadarVibration();
+                System.Diagnostics.Debug.WriteLine($"倾斜开始: 相对角度 X={relativeX:F1}°, Y={relativeY:F1}°");
             }
-            else if (!isCurrentlyTilted && _isTilted) // 从倾斜恢复水平
+            else if (!isCurrentlyTilted && _isTilted)
             {
-                OnTiltEnded();
-                StopRadarVibration(); // 停止震动
-                System.Diagnostics.Debug.WriteLine("回到水平状态");
+                OnTiltEnded(relativeX, relativeY);
+                StopRadarVibration();
+                System.Diagnostics.Debug.WriteLine("回到基准状态");
             }
-            else if (isCurrentlyTilted && _isTilted) // 持续倾斜中
+            else if (isCurrentlyTilted && _isTilted)
             {
-                UpdateRadarVibration(); // 更新震动频率
+                UpdateRadarVibration();
+                // 持续倾斜中也需要更新颜色
+                UpdateBubbleColor(relativeX, relativeY);
             }
 
             _isTilted = isCurrentlyTilted;
         }
 
-        private double CalculateTiltAmount()
+
+
+        private double CalculateTiltAmount(double xAngle, double yAngle)
         {
-            double tiltAmount = Math.Sqrt(XAngle * XAngle + YAngle * YAngle);
-            // 使用阈值的50%作为起始点，让震动更早开始
+            double tiltAmount = Math.Sqrt(xAngle * xAngle + yAngle * yAngle);
             return Math.Max(0, tiltAmount - (_threshold * 0.2));
         }
+
 
 
         private void StopRadarVibration()
@@ -700,20 +742,17 @@ namespace SensorManager
 
 
 
-        private void UpdateBubbleColor()
+        private void UpdateBubbleColor(double xAngle, double yAngle)
         {
             if (Bubble == null) return;
 
             var gradient = new RadialGradientBrush();
-
-            // 使用和震动相同的判断逻辑
-            bool shouldBeRed = Math.Abs(XAngle) >= _threshold || Math.Abs(YAngle) >= _threshold;
+            bool shouldBeRed = Math.Abs(xAngle) >= _threshold || Math.Abs(yAngle) >= _threshold;
 
             if (shouldBeRed)
             {
                 gradient.GradientStops.Add(new GradientStop(Color.FromArgb("#FF4444"), 0.0f));
                 gradient.GradientStops.Add(new GradientStop(Color.FromArgb("#FF0000"), 1.0f));
-                System.Diagnostics.Debug.WriteLine($"小球变红: X={XAngle:F1}°, Y={YAngle:F1}°");
             }
             else
             {
@@ -723,12 +762,19 @@ namespace SensorManager
 
             Bubble.Fill = gradient;
         }
+        private void UpdateBubbleColor()
+        {
+            var (relativeX, relativeY) = CalculateRelativeAngles(XAngle, YAngle);
+            UpdateBubbleColor(relativeX, relativeY);
+        }
 
         private void UpdateTiltStatus()
         {
-            if (Math.Abs(XAngle) < _threshold && Math.Abs(YAngle) < _threshold)
+            var (relativeX, relativeY) = CalculateRelativeAngles(XAngle, YAngle);
+
+            if (Math.Abs(relativeX) < _threshold && Math.Abs(relativeY) < _threshold)
             {
-                TiltStatus = "水平";
+                TiltStatus = _isRelativeBaseline ? "基准状态" : "水平";
             }
             else
             {
@@ -751,14 +797,15 @@ namespace SensorManager
             }
         }
 
-        private void OnTiltStarted()
+        private void OnTiltStarted(double relativeX, double relativeY)
         {
             var record = new TiltRecord
             {
                 StartTime = DateTime.Now,
                 RelativeTime = DateTime.Now - _monitoringStartTime,
-                XAngle = XAngle,
-                YAngle = YAngle
+                XAngle = relativeX,
+                YAngle = relativeY,
+                IsRelative = _isRelativeBaseline
             };
             _tiltRecords.Add(record);
 
@@ -767,16 +814,17 @@ namespace SensorManager
                 AbsoluteTime = DateTime.Now,
                 RelativeTime = DateTime.Now - _recordingStartTime,
                 StableTimeOffset = DateTime.Now - _monitoringStartTime,
-                XAngle = XAngle,
-                YAngle = YAngle,
-                EventType = "开始倾斜"
+                XAngle = relativeX,
+                YAngle = relativeY,
+                EventType = "开始倾斜",
+                IsRelative = _isRelativeBaseline
             };
             _tiltEvents.Add(tiltEvent);
 
             TriggerAlerts();
         }
 
-        private void OnTiltEnded()
+        private void OnTiltEnded(double relativeX, double relativeY)
         {
             if (_tiltRecords.Count > 0)
             {
@@ -788,9 +836,10 @@ namespace SensorManager
                     AbsoluteTime = DateTime.Now,
                     RelativeTime = DateTime.Now - _recordingStartTime,
                     StableTimeOffset = DateTime.Now - _monitoringStartTime,
-                    XAngle = XAngle,
-                    YAngle = YAngle,
-                    EventType = "结束倾斜"
+                    XAngle = relativeX,
+                    YAngle = relativeY,
+                    EventType = "结束倾斜",
+                    IsRelative = _isRelativeBaseline
                 };
                 _tiltEvents.Add(tiltEvent);
             }
@@ -851,5 +900,9 @@ namespace SensorManager
         public TimeSpan? Duration { get; set; }
         public double XAngle { get; set; }
         public double YAngle { get; set; }
+        public bool IsRelative { get; set; }
     }
+
+
+
 }
