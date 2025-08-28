@@ -264,6 +264,7 @@ namespace SensorManager
 
                 var recordDetails = new System.Text.StringBuilder();
                 recordDetails.AppendLine($"总共 {tiltEvents.Count} 个倾斜事件\n");
+                recordDetails.AppendLine($"\n总共倾斜次数: {tiltStartCount} 次");
 
                 foreach (var evt in tiltEvents)
                 {
@@ -277,7 +278,7 @@ namespace SensorManager
                 }
 
                 int tiltStartCount = tiltEvents.Count(evt => evt.EventType == "开始倾斜");
-                recordDetails.AppendLine($"\n总共倾斜次数: {tiltStartCount} 次");
+                
 
                 await DisplayAlert("本次记录详情", recordDetails.ToString(), "确定");
             }
