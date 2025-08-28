@@ -261,10 +261,10 @@ namespace SensorManager
                     await DisplayAlert("查看记录", "当前还没有记录", "确定");
                     return;
                 }
-
+                int tiltStartCount = tiltEvents.Count(evt => evt.EventType == "开始倾斜");
                 var recordDetails = new System.Text.StringBuilder();
                 recordDetails.AppendLine($"总共 {tiltEvents.Count} 个倾斜事件\n");
-                recordDetails.AppendLine($"\n总共倾斜次数: {tiltStartCount} 次");
+                recordDetails.AppendLine($"总共倾斜次数: {tiltStartCount} 次");
 
                 foreach (var evt in tiltEvents)
                 {
@@ -276,9 +276,6 @@ namespace SensorManager
                     //recordDetails.AppendLine($"基准模式: {(evt.IsRelative ? "相对基准" : "绝对水平")}");
                     recordDetails.AppendLine("────────────────────");
                 }
-
-                int tiltStartCount = tiltEvents.Count(evt => evt.EventType == "开始倾斜");
-                
 
                 await DisplayAlert("本次记录详情", recordDetails.ToString(), "确定");
             }
